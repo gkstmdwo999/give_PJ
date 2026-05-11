@@ -7,16 +7,20 @@ import { colors, radius, spacing } from '@/src/theme/colors';
 
 interface AppHeaderProps {
   title: string;
+  subtitle?: string;
   showBackButton?: boolean;
   right?: ReactNode;
   onBackPress?: () => void;
+  onTitlePress?: () => void;
 }
 
 export function AppHeader({
   title,
+  subtitle,
   showBackButton = true,
   right,
   onBackPress,
+  onTitlePress,
 }: AppHeaderProps) {
   return (
     <View style={styles.container}>
@@ -32,9 +36,20 @@ export function AppHeader({
           <View style={styles.placeholder} />
         )}
       </View>
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
+      <Pressable
+        accessibilityRole={onTitlePress ? 'button' : undefined}
+        disabled={!onTitlePress}
+        onPress={onTitlePress}
+        style={styles.titleWrap}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </Pressable>
       <View style={styles.side}>{right ?? <View style={styles.placeholder} />}</View>
     </View>
   );
@@ -51,12 +66,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  title: {
+  titleWrap: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  title: {
     textAlign: 'center',
     fontSize: 17,
     fontWeight: '800',
     color: colors.text,
+  },
+  subtitle: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: colors.textMuted,
   },
   side: {
     minWidth: 64,

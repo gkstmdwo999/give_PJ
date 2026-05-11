@@ -1,3 +1,3 @@
-import { WriteSelectScreen } from '@/src/screens/home';
+import { WriteEntryScreen } from '@/src/screens/home';
 
-export default WriteSelectScreen;
+export default WriteEntryScreen;

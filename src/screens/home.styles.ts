@@ -314,10 +314,6 @@ export const styles = StyleSheet.create({
   writeSelectContent: {
     paddingBottom: 30,
   },
-  writeOptionList: {
-    paddingHorizontal: spacing.lg,
-    gap: 16,
-  },
   centerCard: {
     alignItems: 'center',
     gap: 10,
@@ -337,24 +333,28 @@ export const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
-  writeOption: {
-    gap: 10,
-    padding: 22,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-  },
-  writeOptionBlue: {
-    backgroundColor: colors.brandSoft,
-    borderColor: '#c8d8ff',
-  },
-  writeOptionOrange: {
-    backgroundColor: colors.accentSoft,
-    borderColor: '#ffd2b6',
-  },
   writeOptionTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: colors.text,
+  },
+  writeRoleNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceWarm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  writeRoleNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
   section: {
     padding: spacing.lg,
@@ -483,6 +483,19 @@ export const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'center',
   },
+  searchHeaderArea: {
+    backgroundColor: colors.surface,
+    zIndex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  searchControlsArea: {
+    backgroundColor: colors.surface,
+    paddingBottom: 2,
+  },
+  searchTabsWrap: {
+    backgroundColor: colors.surface,
+  },
   searchIconButton: {
     width: 50,
     height: 50,
@@ -495,8 +508,16 @@ export const styles = StyleSheet.create({
   },
   searchMeta: {
     paddingHorizontal: spacing.md,
-    paddingBottom: 10,
+    paddingTop: 2,
+    paddingBottom: 12,
     gap: 6,
+    backgroundColor: colors.surface,
+  },
+  searchBody: {
+    flex: 1,
+  },
+  searchScroll: {
+    flex: 1,
   },
   analysisTag: {
     fontSize: 13,

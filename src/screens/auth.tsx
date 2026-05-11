@@ -25,6 +25,7 @@ import {
   validateLoginIdentifier,
   validatePassword,
   validatePasswordMatch,
+  validatePhone,
   validateRequired,
 } from '@/src/utils/validation';
 
@@ -256,7 +257,7 @@ export function LoginScreen() {
         <View style={styles.logoCircle}>
           <Ionicons name="heart" size={34} color="#fff" />
         </View>
-        <Text style={styles.loginTitle}>나눔이음</Text>
+        <Text style={styles.loginTitle}>Give, 기부</Text>
         <Text style={styles.loginSubtitle}>따뜻한 나눔, 함께하는 세상</Text>
       </View>
 

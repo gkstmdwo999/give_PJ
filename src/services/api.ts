@@ -1216,7 +1216,22 @@ export const pickupRequestAPI = {
 };
 
 export const notificationAPI = {
-  async list(memberId: string): ApiResult<NotificationItem[]> {
+  async list(memberId: string, authToken?: string): ApiResult<NotificationItem[]> {
+    const backendResult = await requestEnvelope<NotificationItem[]>(
+      `/notifications?memberId=${memberId}`,
+      {
+        headers: buildAuthHeaders(authToken),
+      },
+    );
+
+    if (backendResult.error) {
+      return { data: mockNotifications, error: backendResult.error };
+    }
+
+    if (backendResult.data) {
+      return { data: backendResult.data, error: null };
+    }
+
     const response = await safeFetch<{ data?: NotificationItem[] }>(`/notifications?memberId=${memberId}`);
     if (response?.data) {
       return { data: response.data, error: null };

@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { AppButton } from '@/src/components/common/AppButton';
@@ -57,7 +58,7 @@ export function ChatListScreen() {
 
 export function ChatRoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { chatRooms, messagesByChat, sendMessage } = useAppContext();
+  const { chatRooms, messagesByChat, posts, sendMessage } = useAppContext();
   const [message, setMessage] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [plusOpen, setPlusOpen] = useState(false);
@@ -67,12 +68,18 @@ export function ChatRoomScreen() {
   const [ratingComment, setRatingComment] = useState('');
 
   const chatRoom = useMemo(() => chatRooms.find((item) => item.id === id) ?? chatRooms[0], [chatRooms, id]);
+  const relatedPost = useMemo(
+    () => (chatRoom.postId ? posts.find((item) => item.id === chatRoom.postId) ?? null : null),
+    [chatRoom.postId, posts],
+  );
   const messages = messagesByChat[chatRoom.id] ?? [];
 
   return (
     <AppScreen>
       <AppHeader
         title={chatRoom.userName}
+        subtitle={`${chatRoom.userLocation} · 매너온도 ${chatRoom.mannerTemperature}°C`}
+        onTitlePress={() => setProfileOpen(true)}
         right={
           <Pressable style={styles.headerMenuButton} onPress={() => setMenuOpen(true)}>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.text} />
@@ -80,17 +87,31 @@ export function ChatRoomScreen() {
         }
       />
 
-      <Pressable style={styles.profileStrip} onPress={() => setProfileOpen(true)}>
-        <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={24} color={colors.textMuted} />
+      {relatedPost ? (
+        <View style={styles.profileStrip}>
+          <Pressable style={styles.relatedPostButton} onPress={() => router.push(`/post/${relatedPost.id}`)}>
+            {relatedPost.images[0] ? (
+              <Image source={{ uri: relatedPost.images[0] }} style={styles.relatedPostImage} contentFit="cover" />
+            ) : (
+              <View style={styles.relatedPostPlaceholder}>
+                <Ionicons name="image-outline" size={20} color={colors.textLight} />
+              </View>
+            )}
+            <View style={styles.relatedPostMeta}>
+              <Text
+                style={[
+                  styles.relatedPostType,
+                  relatedPost.type === 'share' ? styles.relatedPostTypeShare : styles.relatedPostTypeNeed,
+                ]}>
+                {relatedPost.type === 'share' ? '나눔해요' : '필요해요'}
+              </Text>
+              <Text style={styles.relatedPostTitle} numberOfLines={2}>
+                {relatedPost.title}
+              </Text>
+            </View>
+          </Pressable>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.chatName}>{chatRoom.userName}</Text>
-          <Text style={styles.chatTime}>
-            {chatRoom.userLocation} · 매너온도 {chatRoom.mannerTemperature}°C
-          </Text>
-        </View>
-      </Pressable>
+      ) : null}
 
       <ScrollView contentContainerStyle={styles.messageList} showsVerticalScrollIndicator={false}>
         {messages.map((item) => (
@@ -299,14 +320,55 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
   },
   profileStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  relatedPostButton: {
+    width: '56%',
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 8,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceMuted,
+  },
+  relatedPostImage: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  relatedPostPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  relatedPostMeta: {
+    flex: 1,
+    gap: 4,
+  },
+  relatedPostType: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  relatedPostTypeShare: {
+    color: colors.brand,
+  },
+  relatedPostTypeNeed: {
+    color: colors.accent,
+  },
+  relatedPostTitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
+    color: colors.text,
   },
   messageList: {
     padding: spacing.lg,

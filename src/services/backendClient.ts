@@ -10,6 +10,7 @@ import {
   Policy,
   Post,
   RoleCode,
+  UrgencyLevel,
   UploadableImage,
   User,
 } from '@/src/types/app';
@@ -177,6 +178,13 @@ function mapBackendPostStatus(status?: string) {
   return 'open';
 }
 
+function mapBackendUrgency(value?: string): UrgencyLevel | undefined {
+  if (value === 'low' || value === 'normal' || value === 'high' || value === 'urgent') {
+    return value;
+  }
+  return undefined;
+}
+
 export function mapBackendPost(raw: any, fallbackLocation?: NeighborhoodLocation): Post {
   const type = raw?.type === 'need' ? 'need' : 'share';
   const authorRaw = raw?.author ?? {};
@@ -191,7 +199,7 @@ export function mapBackendPost(raw: any, fallbackLocation?: NeighborhoodLocation
     category: raw?.category ?? 'household',
     location,
     status: mapBackendPostStatus(raw?.status),
-    urgency: raw?.urgency,
+    urgency: mapBackendUrgency(raw?.urgency),
     images: Array.isArray(raw?.images) ? raw.images : [],
     author: {
       id: String(authorRaw?.id ?? authorRaw?.userId ?? 'user_unknown'),
@@ -216,7 +224,7 @@ export function mergeCreatedPost(
     category: string;
     location: NeighborhoodLocation;
     images: UploadableImage[];
-    urgency?: string;
+    urgency?: UrgencyLevel;
     aiAnalysis?: ImageAnalysisResult | null;
   },
   currentUser: User,

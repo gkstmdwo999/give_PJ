@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -15,7 +15,6 @@ import { AppHeader } from '@/src/components/common/AppHeader';
 import { AppModal } from '@/src/components/common/AppModal';
 import { AppScreen } from '@/src/components/common/AppScreen';
 import { AppTextField } from '@/src/components/common/AppTextField';
-import { PillTabs } from '@/src/components/common/PillTabs';
 import { PostCard } from '@/src/components/common/PostCard';
 import { useAppContext } from '@/src/context/AppContext';
 import { categoryOptions, createMockUser } from '@/src/data/mockData';
@@ -32,6 +31,10 @@ import {
 import { getPostStatusLabel, isOpenPostStatus } from '@/src/utils/post';
 import { formatTimeAgo } from '@/src/utils/time';
 import { validateRequired } from '@/src/utils/validation';
+
+function isBeneficiaryUser(user?: { isVulnerable?: boolean; roleCode?: string; vulnerableTypes?: string[] } | null) {
+  return Boolean(user && (user.isVulnerable || user.roleCode === 'BENEFICIARY' || user.vulnerableTypes?.length));
+}
 
 function SectionTitle({ title, description }: { title: string; description?: string }) {
   return (
@@ -145,16 +148,17 @@ async function pickImage(source: 'camera' | 'gallery') {
 
 export function HomeScreen() {
   const { user, posts } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'all' | 'share' | 'need'>('all');
   const previewLocation = useMemo(() => createMockUser().location, []);
-
+  const allowedHomePostType = user ? (isBeneficiaryUser(user) ? 'share' : 'need') : 'all';
   const homeFeed = useMemo(() => {
     const baseLocation = user?.location ?? previewLocation;
     const radiusKm = user?.location.radiusKm ?? previewLocation.radiusKm;
     const nearbyPosts = filterPostsByRadius(posts, baseLocation, radiusKm).filter((post) =>
-      activeTab === 'all' ? true : post.type === activeTab,
+      allowedHomePostType === 'all' ? true : post.type === allowedHomePostType,
     );
-    const fallbackPosts = posts.filter((post) => (activeTab === 'all' ? true : post.type === activeTab));
+    const fallbackPosts = posts.filter((post) =>
+      allowedHomePostType === 'all' ? true : post.type === allowedHomePostType,
+    );
 
     return {
       location: baseLocation,
@@ -162,7 +166,7 @@ export function HomeScreen() {
       posts: nearbyPosts.length > 0 ? nearbyPosts : fallbackPosts,
       isPreviewMode: !user || nearbyPosts.length === 0,
     };
-  }, [activeTab, posts, previewLocation, user]);
+  }, [allowedHomePostType, posts, previewLocation, user]);
 
   return (
     <AppScreen>
@@ -195,18 +199,6 @@ export function HomeScreen() {
             <Ionicons name="camera-outline" size={18} color={colors.textMuted} />
           </Pressable>
         </View>
-
-        <View style={styles.homeTabsWrap}>
-          <PillTabs
-            tabs={[
-              { id: 'all', label: '전체' },
-              { id: 'share', label: '나눔해요' },
-              { id: 'need', label: '필요해요' },
-            ]}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as 'all' | 'share' | 'need')}
-          />
-        </View>
       </View>
 
       <View style={styles.feedContainer}>
@@ -219,7 +211,9 @@ export function HomeScreen() {
               <Ionicons name="information-circle-outline" size={18} color={colors.brand} />
               <Text style={styles.previewBannerText}>
                 {user
-                  ? '주변 글이 적어서 샘플 더미데이터도 함께 보여주고 있어요.'
+                  ? isBeneficiaryUser(user)
+                    ? '취약계층 회원에게는 나눔해요 게시글만 보여주고 있어요.'
+                    : '일반회원에게는 필요해요 게시글만 보여주고 있어요.'
                   : '첫 홈 화면에서는 샘플 더미데이터를 먼저 보여주고 있어요.'}
               </Text>
             </View>
@@ -370,26 +364,27 @@ export function NotificationsScreen() {
   );
 }
 
-export function WriteSelectScreen() {
+export function WriteEntryScreen() {
+  const { user } = useAppContext();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    const nextType = isBeneficiaryUser(user) ? 'need' : 'share';
+    router.replace(`/write/form?type=${nextType}`);
+  }, [user]);
+
   return (
     <AppScreen scroll contentContainerStyle={styles.writeSelectContent}>
       <AppHeader title="글쓰기" />
       <View style={styles.centerCard}>
-        <Text style={styles.centerTitle}>어떤 글을 작성하시겠어요?</Text>
-        <Text style={styles.centerDescription}>나눔의 방법을 선택해주세요.</Text>
-      </View>
-
-      <View style={styles.writeOptionList}>
-        <Pressable style={[styles.writeOption, styles.writeOptionBlue]} onPress={() => router.push('/write/form?type=share')}>
-          <Ionicons name="gift-outline" size={44} color={colors.brand} />
-          <Text style={styles.writeOptionTitle}>나눔해요</Text>
-          <Text style={styles.sectionDescription}>더 이상 필요 없는 물건을 이웃에게 나눔합니다.</Text>
-        </Pressable>
-        <Pressable style={[styles.writeOption, styles.writeOptionOrange]} onPress={() => router.push('/write/form?type=need')}>
-          <Ionicons name="hand-left-outline" size={44} color={colors.accent} />
-          <Text style={styles.writeOptionTitle}>필요해요</Text>
-          <Text style={styles.sectionDescription}>필요한 물건을 요청하고 도움을 받습니다.</Text>
-        </Pressable>
+        <Text style={styles.centerTitle}>글쓰기 화면으로 이동 중이에요</Text>
+        <Text style={styles.centerDescription}>
+          회원 유형에 맞는 글쓰기 화면으로 자동 연결하고 있습니다.
+        </Text>
       </View>
     </AppScreen>
   );
@@ -398,7 +393,7 @@ export function WriteSelectScreen() {
 export function WriteFormScreen() {
   const { type } = useLocalSearchParams<{ type?: string }>();
   const { user, addPost, authToken } = useAppContext();
-  const postType = type === 'need' ? 'need' : 'share';
+  const postType = user ? (isBeneficiaryUser(user) ? 'need' : 'share') : type === 'need' ? 'need' : 'share';
   const [selectedImage, setSelectedImage] = useState<UploadableImage | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<ImageAnalysisResult | null>(null);
   const [sourceModalOpen, setSourceModalOpen] = useState(false);
@@ -441,10 +436,11 @@ export function WriteFormScreen() {
       return;
     }
 
+    const analysis = result.data;
     setSelectedImage(image);
-    setAiAnalysis(result.data);
-    if (result.data.recommendedCategory) {
-      setFormData((prev) => ({ ...prev, category: prev.category || result.data.recommendedCategory || '' }));
+    setAiAnalysis(analysis);
+    if (analysis.recommendedCategory) {
+      setFormData((prev) => ({ ...prev, category: prev.category || analysis.recommendedCategory || '' }));
     }
   };
 
@@ -532,6 +528,19 @@ export function WriteFormScreen() {
       />
 
       <View style={styles.section}>
+        <View style={styles.writeRoleNotice}>
+          <Ionicons
+            name={postType === 'share' ? 'gift-outline' : 'hand-left-outline'}
+            size={18}
+            color={postType === 'share' ? colors.brand : colors.accent}
+          />
+          <Text style={styles.writeRoleNoticeText}>
+            {postType === 'share'
+              ? '일반회원은 나눔해요 글만 작성할 수 있도록 연결됩니다.'
+              : '취약계층 회원은 필요해요 글만 작성할 수 있도록 연결됩니다.'}
+          </Text>
+        </View>
+
         <View style={styles.photoGate}>
           <SectionTitle
             title="1. 사진 등록"
@@ -643,7 +652,6 @@ export function WriteFormScreen() {
 export function SearchScreen() {
   const { user, posts } = useAppContext();
   const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
   const [filters, setFilters] = useState<SearchFilters>({
     type: 'all',
     status: 'all',
@@ -652,18 +660,19 @@ export function SearchScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const [analysisLabel, setAnalysisLabel] = useState('');
+  const allowedSearchPostType = user ? (isBeneficiaryUser(user) ? 'share' : 'need') : 'all';
 
   const results = useMemo(() => {
     if (!user) return [];
 
     return filterPostsByRadius(posts, user.location, filters.distanceKm).filter((post) => {
+      if (allowedSearchPostType !== 'all' && post.type !== allowedSearchPostType) return false;
       if (filters.type !== 'all' && post.type !== filters.type) return false;
       if (filters.status !== 'all' && post.status !== filters.status) return false;
-      if (activeCategory !== 'all' && post.category !== activeCategory) return false;
       if (query && !post.title.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
     });
-  }, [activeCategory, filters, posts, query, user]);
+  }, [allowedSearchPostType, filters, posts, query, user]);
 
   const runImageSearch = async (source: 'camera' | 'gallery') => {
     try {
@@ -681,9 +690,6 @@ export function SearchScreen() {
         return;
       }
 
-      if (result.data.recommendedCategory) {
-        setActiveCategory(result.data.recommendedCategory);
-      }
       setAnalysisLabel(result.data.detectedItem);
     } catch {
       showUnexpectedError('이미지 검색 중 오류가 발생했습니다');
@@ -693,45 +699,57 @@ export function SearchScreen() {
   return (
     <AppScreen>
       <AppHeader title="검색" />
-      <View style={styles.section}>
-        <View style={styles.searchBarRow}>
-          <View style={{ flex: 1 }}>
-            <AppTextField
-              value={query}
-              onChangeText={setQuery}
-              placeholder="어떤 물품을 찾으시나요?"
-            />
+      <View style={styles.searchHeaderArea}>
+        <View style={styles.searchControlsArea}>
+          <View style={styles.section}>
+            <View style={styles.searchBarRow}>
+              <View style={{ flex: 1 }}>
+                <AppTextField
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="어떤 물품을 찾으시나요?"
+                />
+              </View>
+              <Pressable style={styles.searchIconButton} onPress={() => setFilterOpen(true)}>
+                <Ionicons name="options-outline" size={20} color={colors.text} />
+              </Pressable>
+              <Pressable style={styles.searchIconButton} onPress={() => setImageSearchOpen(true)}>
+                <Ionicons name="camera-outline" size={20} color={colors.text} />
+              </Pressable>
+            </View>
           </View>
-          <Pressable style={styles.searchIconButton} onPress={() => setFilterOpen(true)}>
-            <Ionicons name="options-outline" size={20} color={colors.text} />
-          </Pressable>
-          <Pressable style={styles.searchIconButton} onPress={() => setImageSearchOpen(true)}>
-            <Ionicons name="camera-outline" size={20} color={colors.text} />
-          </Pressable>
+        </View>
+
+        <View style={styles.searchMeta}>
+          <Text style={styles.sectionDescription}>
+            검색 결과 {results.length}개 · 반경 {filters.distanceKm}km
+          </Text>
+          {analysisLabel ? <Text style={styles.analysisTag}>AI 이미지 검색: {analysisLabel}</Text> : null}
         </View>
       </View>
 
-      <PillTabs tabs={categoryOptions} value={activeCategory} onChange={setActiveCategory} />
-
-      <View style={styles.searchMeta}>
-        <Text style={styles.sectionDescription}>
-          검색 결과 {results.length}개 · 반경 {filters.distanceKm}km
-        </Text>
-        {analysisLabel ? <Text style={styles.analysisTag}>AI 이미지 검색: {analysisLabel}</Text> : null}
+      <View style={styles.searchBody}>
+        <ScrollView
+          style={styles.searchScroll}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}>
+          {results.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentLocation={user?.location}
+              onPress={() => router.push(`/post/${post.id}`)}
+            />
+          ))}
+          {results.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={42} color={colors.textLight} />
+              <Text style={styles.emptyTitle}>검색 결과가 없습니다</Text>
+              <Text style={styles.sectionDescription}>다른 검색어나 필터를 시도해보세요.</Text>
+            </View>
+          ) : null}
+        </ScrollView>
       </View>
-
-      <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-        {results.map((post) => (
-          <PostCard key={post.id} post={post} currentLocation={user?.location} onPress={() => router.push(`/post/${post.id}`)} />
-        ))}
-        {results.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={42} color={colors.textLight} />
-            <Text style={styles.emptyTitle}>검색 결과가 없습니다</Text>
-            <Text style={styles.sectionDescription}>다른 검색어나 필터를 시도해보세요.</Text>
-          </View>
-        ) : null}
-      </ScrollView>
 
       <FilterModal visible={filterOpen} onClose={() => setFilterOpen(false)} filters={filters} onChange={setFilters} />
       <SearchSourceModal visible={imageSearchOpen} onClose={() => setImageSearchOpen(false)} onSelect={runImageSearch} />
